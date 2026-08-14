@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import { Book } from './Book';
 import { setState } from '../util/util';
 
-import { showChapter } from '../webView';
+import { HighlightAnchor, showChapter } from '../webView';
+import { ChapterInfo } from '../core/book/model';
 
 /** 当前显示章节 */
 export let curChapter: Chapter;
@@ -18,7 +19,7 @@ export interface LastChapterData {
 export class ChapterGroup extends vscode.TreeItem {
 	constructor(label: string, child: (ChapterGroup | Chapter)[]) {
 		super(label);
-		this.collapsibleState = 1; // 可展开,未展开
+		this.collapsibleState = 1; // 可展开，未展开
 		if (label === '未读章节') {
 			this.collapsibleState = 2;
 		}
@@ -32,54 +33,50 @@ export class ChapterGroup extends vscode.TreeItem {
 }
 
 /**
- * 章节
+ * 章节（UI adapter，P1-04）。
+ * 只消费统一模型 ChapterInfo；正文经 book.parser 获取。
  */
 export class Chapter extends vscode.TreeItem {
 	label: string;
 	title: string;
-	content: string;
 	type = 'chapter' as const;
+	/** 章节序号（= ChapterInfo.index） */
+	i: number;
+	/** 统一章节信息 */
+	info: ChapterInfo;
 	/**
 	 * 创建章节
 	 * @param book 这个章节属于哪本书
-	 * @param label 章节标题
-	 * @param i 数组index
-	 * @param txtIndex 在这本书的内容的开始下标
-	 * @param size 长度
+	 * @param info 统一章节信息
 	 * @param isRead 是否已读
 	 */
-	constructor(
-		public book: Book,
-		label: string,
-		public i: number,
-		public txtIndex: number,
-		public size: number,
-		public isRead = false
-	) {
-		super(label.trim());
-		this.label = label.trim();
-		this.tooltip = `${this.label}---共${size}字`;
+	constructor(public book: Book, info: ChapterInfo, public isRead = false) {
+		super(info.title);
+		this.label = info.title;
+		this.title = info.title;
+		this.tooltip = `${this.label}`;
 		this.collapsibleState = 0; // 不可折叠
-		// 4个自己用的
-		this.title = label;
-		this.i = i;
-		// this.txtIndex = txtIndex;
-		this.size = size;
+		this.i = info.index;
+		this.info = info;
 		this.book = book;
 		this.command = { title: '', command: 'novel-look.showChapter', arguments: [this] }; // 执行命令
-		this.content = '';
 		this.isRead = isRead;
 	}
 
 	/**
 	 * 打开本章
-	 *
+	 * @param highlight 搜索结果高亮锚点（P5-04，可选）
 	 */
-	async openThis() {
-		// console.log(this.i, this.txtIndex, this.size);
+	async openThis(highlight?: HighlightAnchor) {
 		curChapter = this;
-		await this.getTxt();
-		let lineList = this.parseChapterTxt_WebView();
+		const parser = this.book.parser;
+		if (!parser) {
+			vscode.window.showInformationMessage(
+				`无法打开章节: 该书解析器不可用 (${this.book.parserError || '未知错误'})`
+			);
+			return;
+		}
+		const content = await parser.getChapterContent(this.info);
 		// 缓存最后打开的章节
 		const data: LastChapterData = {
 			title: this.label,
@@ -88,25 +85,16 @@ export class Chapter extends vscode.TreeItem {
 			fullPath: this.book.fullPath,
 		};
 		setState('lastOpenChapter', data);
-		showChapter(this.label, lineList);
-	}
-	/**
-	 * 处理章节的内容,对于webView,不需要太多处理,给他数组就行,剩下的用css解决
-	 */
-	parseChapterTxt_WebView() {
-		let arr = this.content.split('\n');
-		let res: string[] = [];
-		arr.forEach(function (item) {
-			item = item.trim();
-			if (item && item.length) {
-				res.push(item);
-			}
-		});
-		return res;
-	}
-	async getTxt() {
-		await this.book.getContent();
-		this.content = this.book.txt.substring(this.txtIndex + this.title.length, this.txtIndex + this.size);
+		// P0-03-7：携带书身份（fullPath），WebView 端不再只按章节标题去重
+		showChapter(
+			this.label,
+			content.lines,
+			this.book.fullPath,
+			this.book.bookId,
+			this.info.id,
+			this.i,
+			highlight
+		);
 	}
 	/**
 	 * 设置当前章节为已读章节
@@ -114,7 +102,6 @@ export class Chapter extends vscode.TreeItem {
 	setThisRead() {
 		this.book.setReadChapter(this.i);
 	}
-
 
 	// 放着就行
 	async getChildren() {

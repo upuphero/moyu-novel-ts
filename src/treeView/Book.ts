@@ -1,148 +1,158 @@
-import { getFileName, readFile } from '../file/fileUtil';
-import { split } from '../split';
-import { getExtensionUri, getStateDefault, setState, setSync } from '../util/util';
+import { getFileName } from '../file/fileUtil';
+import { getExtensionUri, getStateDefault, setState } from '../util/util';
 import * as vscode from 'vscode';
 import { Chapter, ChapterGroup } from './Chapter';
 import { lastChapter } from './TreeViewProvider';
+import {
+	IS_SHOW_READ_CHAPTER_KEY,
+	readListKey,
+} from '../legacy/ids';
+import { ParserFactory } from '../core/parser/ParserFactory';
+import { BookParser } from '../core/parser/BookParser';
+import { getChapterRegex } from '../split';
+import { vscodeFileReader } from '../file/vscodeAdapter';
+import { generateBookId } from '../core/progress/id';
+import { SHOW_READ_CHAPTER_KEY } from '../core/progress/state';
+import { getProgressService } from '../core/progress/ProgressService';
+import { getChapterIndexCache } from '../core/cache/chapterIndexCache';
+
 /**
- * 书
+ * 书（UI adapter，P2）。
+ * - 拥有稳定 bookId（路径哈希，ADR-007），同名不同路径状态隔离。
+ * - 已读列表：新 key（bookId）优先，旧 key（book_<label>）按需迁移（兼容窗口）。
+ * - 含本地路径的状态不再跨设备同步（移除 setSync）。
  */
 export class Book extends vscode.TreeItem {
 	label: string;
 	fullPath: string;
-	txt: string;
+	/** 稳定书 ID（ADR-007） */
+	bookId: string;
+	/** 统一解析器（由 ParserFactory 创建） */
+	parser?: BookParser;
+	/** 创建解析器失败时的错误信息（如不支持的格式），书架不崩溃 */
+	parserError?: string;
+
 	// 所有章节列表
 	chapterList: Chapter[] = [];
-	/**未读章节 可能不会初始化 */
+	/** 未读章节 可能不会初始化 */
 	unreadList: Chapter[] = [];
 	/** 已读章节 可能不会初始化 */
 	haveReadList: Chapter[] = [];
-	// TODO:类型
 	readList: number[] = [];
-	timer?: NodeJS.Timeout;
 	type = 'book' as const;
+
 	/**
 	 * 创建一本书
-	 * @param  label 名称
-	 * @param  fullPath 这本书的路径
+	 * @param uri 这本书的文件地址
 	 */
 	constructor(uri: vscode.Uri) {
 		super(getFileName(uri));
 		this.label = getFileName(uri);
 		this.tooltip = `${this.label}`;
-		this.collapsibleState = 1; // 可展开,未展开
-		// this.description = this.version;
-		// console.log({ lastChapter, p: uri.fsPath, });
+		this.collapsibleState = 1; // 可展开，未展开
 		if (lastChapter?.fullPath === uri.fsPath) {
-			this.iconPath = vscode.Uri.joinPath(getExtensionUri(), 'img/book_read.png');
+			this.iconPath = vscode.Uri.joinPath(
+				getExtensionUri(),
+				'img/book_read.png'
+			);
 		} else {
 			this.iconPath = vscode.Uri.joinPath(getExtensionUri(), 'img/book.png');
 		}
-		// 自己用的
 		this.fullPath = uri.fsPath;
-		this.txt = ''; //文件内容,暂时留空
+		this.bookId = generateBookId(uri.fsPath);
 
-		// 已读章节
-		this.readList = getStateDefault<number[]>('book_' + this.label, []);
-		// console.warn(this.label);
-		// console.warn(this.readList);
+		try {
+			this.parser = ParserFactory.create(uri.fsPath, {
+				readFile: vscodeFileReader,
+				chapterRegex: getChapterRegex,
+				cache: getChapterIndexCache() ?? undefined,
+			});
+		} catch (error) {
+			this.parserError =
+				error instanceof Error ? error.message : String(error);
+			console.error('创建解析器失败', this.fullPath, this.parserError);
+		}
+
+		// 已读章节（P2-02/05：新 key（bookId）优先；旧 key 按需迁移）
+		const svc = getProgressService();
+		if (svc) {
+			void svc.migrateReadList(this.bookId, readListKey(this.label));
+			this.readList = svc.getReadList(this.bookId);
+		} else {
+			// 服务未初始化（理论不会发生，防御降级）：直接读旧 key
+			this.readList = getStateDefault<number[]>(readListKey(this.label), []);
+		}
 	}
 
 	async getChildren() {
 		return await this.getChapterList();
 	}
 
-	// 获取这本书的章节内容,这个是获取章节列表的最佳方式
+	/**
+	 * 获取章节列表（经由统一模型 ChapterInfo）
+	 */
 	async getChapterList() {
-		// console.log(`getChapterList==${this.label}`);
-		// console.time('获取章节内容时间');
-		await this.getContent();
-		let arr = split(this.txt);
-		//FIXME: 类型修改
-		this.chapterList = arr.map(
-			(
-				t: {
-					s: string;
-					i: number;
-					txtIndex: number;
-					size: number;
-				},
-				i: number
-			) => {
-				return new Chapter(this, t.s, t.i, t.txtIndex, t.size, !!this.readList[i] || false);
-			}
-		);
-		// console.timeEnd('获取章节内容时间');
+		if (!this.parser) {
+			vscode.window.showInformationMessage(
+				`无法打开该书: ${this.parserError || '未知错误'}`
+			);
+			return [];
+		}
+		// P4-06：解析失败（损坏 EPUB/ZIP 等）不崩溃书架，提示后返回空
+		let infos;
+		try {
+			infos = await this.parser.getChapterList();
+		} catch (error) {
+			vscode.window.showInformationMessage(
+				`无法解析该书: ${error instanceof Error ? error.message : String(error)}`
+			);
+			console.error('解析章节列表失败', this.fullPath, error);
+			return [];
+		}
+		this.chapterList = infos.map((info, i) => {
+			return new Chapter(this, info, !!this.readList[i] || false);
+		});
 
-		// 如果需要隐藏已读章节
-		// console.warn('是否隐藏已读章节', !getStateDefault('isShowReadChapter', false));
-		if (!getStateDefault('isShowReadChapter', false)) {
-			// 多筛选一遍,并不怎么消耗性能,但是可以提高可维护性
-			this.unreadList = this.chapterList.filter(e => !e.isRead);
-			this.haveReadList = this.chapterList.filter(e => e.isRead);
+		// 是否需要隐藏已读章节（新 key 显式值 → 旧 key 显式值 → 默认，P2-05）
+		const showRead = getStateDefault<boolean | undefined>(
+			SHOW_READ_CHAPTER_KEY,
+			undefined
+		);
+		const isShowRead =
+			showRead !== undefined
+				? showRead
+				: getStateDefault(IS_SHOW_READ_CHAPTER_KEY, false);
+		if (!isShowRead) {
+			this.unreadList = this.chapterList.filter((e) => !e.isRead);
+			this.haveReadList = this.chapterList.filter((e) => e.isRead);
 			return [
 				new ChapterGroup('已读章节', this.haveReadList),
 				new ChapterGroup('未读章节', this.unreadList),
-			]
+			];
 		}
-		// 如果要进一步做每多少章分组会有一个问题,其实我不知道这是第多少章..
 		return this.chapterList;
-	}
-
-	//
-	/**
-	 * 获取这本书的内容,为了节省内存,设置计时器在多少时间后删除文本(自动回收)
-	 * 重复调用这个方法可以重置这个时间
-	 */
-	async getContent() {
-		try {
-			if (this.timer) {
-				clearInterval(this.timer);
-			}
-			//10分钟后清除这本书
-			this.timer = setTimeout(() => {
-				this.clearTxt();
-			}, 1000 * 60 * 10);
-			if (this.txt) {
-				return;
-			}
-			// console.time();
-			//TODO:
-			this.txt = (await readFile(vscode.Uri.file(this.fullPath), { checkEncoding: true })) as string;
-			// console.timeEnd();
-		} catch (error) {
-			console.error(error);
-			vscode.window.showInformationMessage('获取书内容失败,错误信息已打印到控制台');
-		}
 	}
 
 	/**
 	 * 设置某个章节为已读章节
-	 * @param  i 章节下标
+	 * @param i 章节下标
 	 */
 	setReadChapter(i: number) {
-		this.readList[i] = 1; //数据转化为json,所以1应该比true更合适
-		setState('book_' + this.label, this.readList);
-		// console.warn(this.readList);
-		// TODO:
-		setSync(
-			...[
-				// 设置需要同步的缓存key
-				'book_' + this.label,
-				'lastOpenChapter',
-				'isShowReadChapter',
-				// 'saveScroll',
-			]
-		);
+		this.readList[i] = 1; // 数据转化为 json，所以 1 比 true 更合适
+		const svc = getProgressService();
+		if (svc) {
+			void svc.saveReadList(this.bookId, this.readList);
+		}
+		// 旧 key 保留兼容窗口（不再 setSync，含路径状态不再跨设备同步）
+		setState(readListKey(this.label), this.readList);
 	}
 
 	clearReadChapter() {
 		this.readList = [];
-		setState('book_' + this.label, []);
-	}
-
-	clearTxt() {
-		console.log('清除txt', this.label);
-		this.txt = '';
+		const svc = getProgressService();
+		if (svc) {
+			void svc.saveReadList(this.bookId, []);
+		}
+		setState(readListKey(this.label), []);
 	}
 }

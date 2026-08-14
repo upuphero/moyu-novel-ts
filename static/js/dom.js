@@ -48,6 +48,63 @@ export function initEl() {
 /** @returns {number} 获取主滚动区域的滚动高度 */
 export let getScroll = () => el.main.scrollTop;
 export let setScroll = (h) => el.main.scrollTo(0, h);
+/** 段落元素相对滚动容器顶部的偏移（hidden 段落视为 Infinity，避免二分命中） */
+function paragraphTop(elm) {
+	return elm.style.display === "none"
+		? Infinity
+		: elm.getBoundingClientRect().top - el.main.getBoundingClientRect().top;
+}
+
+/**
+ * 当前视口顶部所在段落下标（P2-04）。
+ * 段落 div 带 dataset.i（render 时设置）；布局变化后段落 identity 稳定。
+ */
+export function currentParagraphIndex() {
+	const children = el.content?.children;
+	if (!children || !children.length) return 0;
+	let lo = 0,
+		hi = children.length - 1,
+		ans = 0;
+	const scrollTop = el.main.scrollTop;
+	while (lo <= hi) {
+		const mid = (lo + hi) >> 1;
+		if (paragraphTop(children[mid]) <= scrollTop + 2) {
+			ans = mid;
+			lo = mid + 1;
+		} else {
+			hi = mid - 1;
+		}
+	}
+	return ans;
+}
+
+/** 本章进度 0..1（P2-03 fallback 锚点） */
+export function chapterProgress() {
+	const max = el.main.scrollHeight - el.main.clientHeight;
+	return max > 0 ? Math.min(1, Math.max(0, el.main.scrollTop / max)) : 0;
+}
+
+/**
+ * 滚动到指定段落（P2-04：段落顶部略留边距）。
+ * 段落在 hidden 区（内容变少）时回退到本章进度/顶部。
+ */
+export function scrollToParagraph(pi) {
+	const children = el.content?.children;
+	if (!children || !children.length) {
+		setScroll(0);
+		return;
+	}
+	const visible = Array.from(children).filter(
+		(c) => c.style.display !== "none"
+	);
+	if (!visible.length) {
+		setScroll(0);
+		return;
+	}
+	const target = visible[Math.min(pi, visible.length - 1)];
+	const top = target.getBoundingClientRect().top - el.main.getBoundingClientRect().top;
+	setScroll(Math.max(0, top - 10));
+}
 
 /**
  * 页面是否触底
@@ -265,3 +322,4 @@ function handleBtn2Click() {
 // 		document.msFullscreenElement
 // 	);
 // }
+

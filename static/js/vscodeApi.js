@@ -1,6 +1,11 @@
 /* eslint-env browser */
 
-import { dispatchCustomEvent, getScroll } from './dom.js';
+import {
+	dispatchCustomEvent,
+	getScroll,
+	currentParagraphIndex,
+	chapterProgress,
+} from './dom.js';
 
 // eslint-disable-next-line no-undef
 const vscode = acquireVsCodeApi();
@@ -52,7 +57,9 @@ export function saveScroll(scroll = getScroll(), isPostMsg = true) {
 	setCache('readScroll', scroll);
 	// console.warn("save_Scroll", scroll);
 	if (isPostMsg) {
-		postMsg('saveScroll', { key: 'catch_' + cache?.showChapter?.title, value: scroll });
+		// P0-03-7：key 包含书身份，避免不同书/同名章节共用滚动位置
+		const cur = cache?.showChapter || {};
+		postMsg('saveScroll', { key: 'catch_' + (cur.book || '') + '_' + (cur.title || ''), value: scroll });
 	}
 }
 
@@ -74,6 +81,17 @@ export function postMsg(type, data) {
  * @param {'next' | 'prev'} type
  */
 export const chapterToggle = type => {
+	// P2-03：切换前上报当前语义进度（防丢失最后位置）
+	const cur = cache?.showChapter || {};
+	if (cur.bookId && cur.chapterId) {
+		postMsg('saveProgress', {
+			bookId: cur.bookId,
+			chapterId: cur.chapterId,
+			chapterIndex: cur.chapterIndex,
+			paragraphIndex: currentParagraphIndex(),
+			chapterProgress: chapterProgress(),
+		});
+	}
 	postMsg('chapterToggle', type);
 	//切换章节时,清除当前章节的缓存滚动高度
 	saveScroll(0, false);

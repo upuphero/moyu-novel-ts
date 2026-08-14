@@ -19,10 +19,7 @@
 		"node_modules",
 		".vscode-test"
 	],
-	// 自己加的,不加的话不会包含自己写的dts
 	"include": [
-		"src/**/*.ts",
-		"config/**/*.d.ts",
-		"src/**/*.js"
+		"src/**/*.ts"
 	],
 }

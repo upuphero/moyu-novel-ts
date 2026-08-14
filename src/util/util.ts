@@ -48,16 +48,8 @@ export function getExtensionUri(): vscode.Uri {
 	return content.extensionUri;
 }
 
-export function fn<T>(this: T, ...args: T[]): Promise<{ this: T; args: T[] }> {
-	return new Promise<{ this: T; args: T[] }>((resolve, reject) => {
-		setTimeout(() => {
-			resolve({ this: this, args });
-		}, 1000);
-	});
-}
-
 export async function sleep(ms = 10) {
-	return new Promise<void>((resolve, reject) => {
+	return new Promise<void>((resolve) => {
 		setTimeout(resolve, ms);
 	});
 }

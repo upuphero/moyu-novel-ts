@@ -1326,3 +1326,10 @@ body.screenDirection-4 .side-next-btn.btn2 {
 .rotate-screen-item:nth-child(4) {
 	transform: rotate(calc(var(--rotate-deg) * -1 + 270deg));
 }
+/* P5-04：搜索结果高亮（主题无关，保持可读） */
+.search-highlight {
+	background: rgba(255, 200, 0, 0.55);
+	color: inherit;
+	border-radius: 2px;
+	padding: 0 1px;
+}

@@ -1,11 +1,13 @@
 .vscode/**
 .vscode-test/**
+.github/**
+docs/**
 out/**
 node_modules/**
 src/**
+static/js/*.map
 .gitignore
 .yarnrc
-vsc-extension-quickstart.md
 **/tsconfig.json
 **/.eslintrc.json
 **/*.map
@@ -15,3 +17,7 @@ config
 .history
 README-local.md
 img/old/
+DEVELOPMENT_PLAN.md
+.mocharc.json
+.nvmrc
+.editorconfig

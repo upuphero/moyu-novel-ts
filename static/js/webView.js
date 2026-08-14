@@ -24,6 +24,9 @@ import {
 	getStyleRule,
 	updateHeaderTime,
 	updateBtn2Area,
+	currentParagraphIndex,
+	chapterProgress,
+	scrollToParagraph,
 } from "./dom.js";
 import { autoScrollScreen, scrollFunc } from "./scroll.js";
 import "./contextmenu.js";
@@ -68,8 +71,9 @@ let fn = {
 	},
 	/*显示章节*/
 	showChapter(data) {
-		// 拦截重复的显示
-		if (data.title === (cache.showChapter && cache.showChapter.title)) {
+		// P0-03-7：同时比较书身份（book），不再只按章节标题去重
+		const last = cache.showChapter || {};
+		if (data.title === last.title && data.book === last.book) {
 			return;
 		}
 		// console.warn('开始显示章节', data.title, cache, data);
@@ -82,6 +86,13 @@ let fn = {
 			updateBtn2Area();
 		}
 		renderId++;
+		// P5-04：搜索结果高亮优先于恢复锚点
+		if (data.highlight && typeof data.highlight.paragraphIndex === 'number') {
+			applyHighlight(data.highlight.paragraphIndex, data.highlight.keyword);
+		} else {
+			// P2-04：应用恢复锚点（段落 → 本章进度 → 旧 pixel）
+			applyRestore(data.restore);
+		}
 		setTimeout(() => {
 			dispatchCustomEvent("showChapterAfter", data);
 		}, 0);
@@ -137,6 +148,75 @@ export function changeTheme(index) {
 	} else if (rule) {
 		rule.style = "";
 	}
+}
+
+/**
+ * 应用搜索结果高亮（P5-04）：仅高亮指定段落中的关键词，并滚动到该段落。
+ * 安全：使用 textContent 构建（P0-10 文本安全渲染路径，不解析用户输入为 HTML）。
+ * @param {Number} paragraphIndex
+ * @param {String} keyword
+ */
+function applyHighlight(paragraphIndex, keyword) {
+	const div = el.content.children[paragraphIndex];
+	if (!div || !keyword) return;
+	const text = div.textContent || '';
+	const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
+	if (idx < 0) return;
+	const before = text.slice(0, idx);
+	const match = text.slice(idx, idx + keyword.length);
+	const after = text.slice(idx + keyword.length);
+	// 重建节点（textContent 赋值保证关键词不被当作 HTML 执行）
+	div.textContent = '';
+	const b = document.createElement('span');
+	b.textContent = before;
+	const m = document.createElement('mark');
+	m.className = 'search-highlight';
+	m.textContent = match;
+	const a = document.createElement('span');
+	a.textContent = after;
+	div.appendChild(b);
+	div.appendChild(m);
+	div.appendChild(a);
+	scrollToParagraph(paragraphIndex);
+}
+
+/**
+ * 应用恢复锚点（P2-04）：段落 → 本章进度 → 旧 pixel（首次恢复）→ 顶部。
+ * 应用后上报一次当前段落，完成"旧 pixel 转写新进度"。
+ * @param {Object} restore
+ */
+function applyRestore(restore) {
+	restore = restore || {};
+	if (typeof restore.paragraphIndex === "number" && restore.paragraphIndex >= 0) {
+		scrollToParagraph(restore.paragraphIndex);
+	} else if (typeof restore.chapterProgress === "number") {
+		setScroll(
+			Math.round(
+				restore.chapterProgress *
+					(el.main.scrollHeight - el.main.clientHeight)
+			)
+		);
+	} else if (typeof restore.pixel === "number" && Number.isFinite(restore.pixel)) {
+		setScroll(restore.pixel);
+	} else {
+		setScroll(0);
+	}
+	requestAnimationFrame(reportProgress);
+}
+
+/**
+ * 上报当前阅读位置（P2-03：paragraphIndex + chapterProgress 为新主锚点）
+ */
+function reportProgress() {
+	const cur = cache.showChapter || {};
+	if (!cur.bookId || !cur.chapterId) return;
+	postMsg("saveProgress", {
+		bookId: cur.bookId,
+		chapterId: cur.chapterId,
+		chapterIndex: cur.chapterIndex,
+		paragraphIndex: currentParagraphIndex(),
+		chapterProgress: chapterProgress(),
+	});
 }
 
 /**
@@ -299,6 +379,8 @@ window.addEventListener("DOMContentLoaded", function () {
 				e.classList.remove("right");
 			});
 		}
+		// P2-03：滚动防抖后上报语义进度（段落 + 本章百分比）
+		reportProgress();
 	}
 });
 

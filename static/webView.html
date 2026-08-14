@@ -3,7 +3,6 @@
 
 <head>
 	<meta name="renderer" content="webkit" />
-	<meta name="renderer" content="webkit" />
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<!-- <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /> -->
 	<meta name="viewport"
@@ -11,8 +10,9 @@
 
 	<meta charset="UTF-8" />
 	<title>阅读</title>
-	<!-- 控制引用权限 -->
-	<!-- <meta http-equiv="Content-Security-Policy" content="script-src #csp; style-src #csp" /> -->
+	<!-- 控制引用权限（P0-10：最低安全边界，禁止远程资源；#csp 在扩展侧替换为 cspSource。Phase 8 强化 nonce/CSP 与消息校验） -->
+	<meta http-equiv="Content-Security-Policy"
+		content="default-src 'none'; script-src #csp; style-src #csp 'unsafe-inline'; img-src #csp data:; font-src #csp;" />
 	<link rel="stylesheet" href="@./style.css" />
 	<script src="@./js/webView.js" type="module"></script>
 

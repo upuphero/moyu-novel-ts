@@ -100,28 +100,28 @@ window.addEventListener("DOMContentLoaded", function () {
 		// 使用的主题的下标
 		const use = cache.setting?.theme.use - 1;
 		const themes = cache.setting?.theme?.custom || [];
-		let themeHtml = themes.map(
-			(theme, i) => `
-		<div class="contextmenu-item theme-item"
-		style="${getThemeStyleRule(theme)}"
-		data-id="${i + 1}"
-		>
-		<div class="icon ${use === i ? "on" : ""}"></div>
-		${theme.name}</div>`
-		);
 
 		// 更新滚动速度,zoom等
-
 		el.scrollSpeedInput.value = cache.setting.scrollSpeed;
 		el.zoomInput.value = cache.setting.zoom;
-		// el.turnScreenInput.value = cache.setting.screenDirection;
-		// console.log(el.turnScreenBtns);
 		el.turnScreenBtns[cache.setting.screenDirection - 1].classList.add(
 			"on"
 		);
 
-		let s = themeHtml?.join("");
-		el.customThemeContainer.innerHTML = s;
+		// P0-10：使用 DOM API 构建主题列表（theme.name 以 textContent 渲染，禁止不可信 innerHTML）
+		el.customThemeContainer.replaceChildren();
+		for (let i = 0; i < themes.length; i++) {
+			const theme = themes[i];
+			const item = document.createElement("div");
+			item.className = "contextmenu-item theme-item";
+			item.style.cssText = getThemeStyleRule(theme) || "";
+			item.dataset.id = String(i + 1);
+			const icon = document.createElement("div");
+			icon.className = "icon" + (use === i ? " on" : "");
+			item.appendChild(icon);
+			item.appendChild(document.createTextNode(String(theme?.name ?? "")));
+			el.customThemeContainer.appendChild(item);
+		}
 	}
 
 	el.themeContainer.onclick = function (e) {
@@ -269,6 +269,10 @@ export function getThemeStyleRule(theme = {}) {
 	];
 	console.log(list);
 
+	// P0-08：fontWidght 为历史拼写错误 key，提供 fontWidth 新 key + 旧 key alias，避免静默丢失
+	if (theme.fontWidth && !theme.fontWidght) {
+		theme.fontWidght = theme.fontWidth;
+	}
 	list = list.map((k) => {
 		if (defaultKeys[k])
 			return `--${k}: ${theme[k] || `var(--${defaultKeys[k]})`};`;

@@ -1,11 +1,17 @@
 {
 	"root": true,
+	"env": {
+		"node": true
+	},
 	"parser": "@typescript-eslint/parser",
 	"globals": {
 		"console": true,
 		"clearInterval": "readonly",
 		"setTimeout": "readonly",
 		"NodeJS": "readonly",
+		"suite": "readonly",
+		"test": "readonly",
+		"suiteSetup": "readonly"
 	},
 	"parserOptions": {
 		"ecmaVersion": 6,

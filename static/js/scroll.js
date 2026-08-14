@@ -59,9 +59,11 @@ export function autoScrollScreen() {
 function scroll(v = 1) {
 	console.log("scroll");
 	// 检查更新尺寸信息,仅在初始化和重新渲染后才更新尺寸信息
+	// P0-03-8：更新 lastRenderId，避免每个滚动 tick 都重算尺寸
 	if (lastRenderId !== renderId) {
 		max = el.main.scrollHeight;
 		h = el.main.clientHeight;
+		lastRenderId = renderId;
 	}
 
 	num = getScroll() + v;

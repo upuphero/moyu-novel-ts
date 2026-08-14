@@ -1,7 +1,7 @@
 {
-	"name": "novel-look-ts",
-	"displayName": "novel-look2",
-	"description": "支持高度自定义操作的看(mo)书(yu)插件,主打高性能,主题定制(默认vscode主题)",
+	"name": "moyu-novel-ts",
+	"displayName": "Moyu Novel",
+	"description": "支持高度自定义操作的看(mo)书(yu)插件,主打高性能,主题定制(默认vscode主题)。纯本地 TXT 阅读。",
 	"version": "2.1.11",
 	"keywords": [
 		"novel",
@@ -9,10 +9,9 @@
 		"txt",
 		"小说",
 		"阅读",
-		"阅读",
 		"高性能"
 	],
-	"publisher": "ytx222",
+	"publisher": "moyu-novel",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
@@ -29,7 +28,8 @@
 	"icon": "img/fish.png",
 	"activationEvents": [
 		"onView:novelLookTreeView",
-		"onCommand:novel-look.openWebView"
+		"onCommand:novel-look.openWebView",
+		"onCommand:moyu-novel.searchBook"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -85,7 +85,7 @@
 					"type": "number",
 					"minimum": 1,
 					"default": 1.6,
-					"description": "章节名称的字体大小,单位是rem"
+					"description": "章节名称的字体大小,单位是rem (P0-08: 已贡献配置,当前 Reader 尚未消费,保留不删)"
 				},
 				"novelLook.readSetting.zoom": {
 					"type": "number",
@@ -150,12 +150,12 @@
 							"bg": {
 								"type": "string",
 								"default": "#000",
-								"title": "主题名称"
+								"title": "背景颜色"
 							},
 							"color": {
 								"type": "string",
 								"default": "#FFF",
-								"title": "主题名称"
+								"title": "文字颜色"
 							},
 							"btnBg": {
 								"type": "string",
@@ -185,17 +185,22 @@
 							"textColor": {
 								"type": "string",
 								"default": "#FFF",
-								"title": "可选属性,正文文字文字颜色,默认=color,建议不要修改,直接改color即可"
+								"title": "可选属性,正文文字颜色,默认=color"
 							},
 							"fontWidght": {
 								"type": "string",
 								"default": "400",
-								"title": "可选属性,正文文字文字颜色,默认=color,建议不要修改,直接改color即可"
+								"title": "已废弃:正文字体字重(历史拼写错误 key)。请使用 fontWidth。P0-08 保留 alias 兼容"
+							},
+							"fontWidth": {
+								"type": "string",
+								"default": "400",
+								"title": "可选属性,正文字体字重(如 400/700),默认 400"
 							},
 							"fontFamily": {
 								"type": "string",
-								"default": "#FFF",
-								"title": "可选属性,正文文字文字颜色,默认=color,建议不要修改,直接改color即可"
+								"default": "",
+								"title": "可选属性,正文字体族(如 'Microsoft YaHei'),留空使用默认字体"
 							}
 						},
 						"required": [
@@ -217,7 +222,7 @@
 						}
 					],
 					"scope": "application",
-					"description": "用户自定义主题,格式\n{name:'名称',bg:'#000', color:'#000', btnBg:'#000', btnColor:'#000', btnActive:'#000', btnActiveBorder:'#000',navBg?:'#000',textColor?:'#000',}[]"
+					"description": "用户自定义主题,格式\n{name:'名称',bg:'#000', color:'#000', btnBg:'#000', btnColor:'#000', btnActive:'#000', btnActiveBorder:'#000',navBg?:'#000',textColor?:'#000',fontWidth?:'400',fontFamily?:'字体'}[]"
 				}
 			}
 		},
@@ -226,16 +231,6 @@
 			"zenMode.showTabs": "none"
 		},
 		"commands": [
-			{
-				"command": "novel-look.helloWorld",
-				"category": "小说阅读",
-				"title": "Hello World11111"
-			},
-			{
-				"command": "novel-look.test",
-				"category": "小说阅读",
-				"title": "test"
-			},
 			{
 				"command": "novel-look.refreshFile",
 				"category": "小说阅读",
@@ -292,19 +287,10 @@
 				"title": "清空已读章节"
 			},
 			{
-				"command": "extension.sayHello",
-				"title": "Hello World22222",
+				"command": "moyu-novel.searchBook",
 				"category": "小说阅读",
-				"icon": {
-					"light": "path/to/light/icon.png",
-					"dark": "path/to/dark/icon.png"
-				}
-			},
-			{
-				"command": "novel-look.sayHello",
-				"category": "小说阅读",
-				"icon": "img/refresh.png",
-				"title": "删除"
+				"icon": "img/search.png",
+				"title": "全书搜索"
 			}
 		],
 		"keybindings": [
@@ -342,6 +328,11 @@
 					"group": ""
 				},
 				{
+					"command": "moyu-novel.searchBook",
+					"when": "view == novelLookTreeView",
+					"group": "navigation"
+				},
+				{
 					"command": "novel-look.showReadChapter",
 					"when": "view == novelLookTreeView",
 					"group": ""
@@ -355,11 +346,11 @@
 			"view/item/context": [
 				{
 					"command": "novel-look.clearReadChapter",
-					"when": "view == novelLookTreeViewk"
+					"when": "view == novelLookTreeView"
 				},
 				{
 					"command": "novel-look.showChapter",
-					"when": "view == novelLookTreeViewk"
+					"when": "view == novelLookTreeView"
 				}
 			]
 		},
@@ -384,29 +375,33 @@
 		"viewsWelcome": [
 			{
 				"view": "novelLookTreeView",
-				"contents": "您还没有电子书,请添加电子书\n[添加](command:novel-look.openExplorer)"
+				"contents": "您还没有电子书,请把 TXT 小说放入书库目录\n[打开书库目录](command:novel-look.openExplorer)"
 			}
 		]
 	},
 	"license": "SEE LICENSE IN LICENSE.txt",
 	"bugs": {
-		"url": "https://github.com/ytx222/novel-look-ts/issues"
+		"url": "https://github.com/upuphero/moyu-novel-ts/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ytx222/novel-look-ts"
+		"url": "https://github.com/upuphero/moyu-novel-ts"
 	},
-	"homepage": "https://github.com/ytx222/novel-look-ts/blob/master/README.md",
+	"homepage": "https://github.com/upuphero/moyu-novel-ts/blob/master/README.md",
 	"scripts": {
 		"vscode:prepublish": "npm run package",
 		"compile": "node esbuild.config.js",
 		"watch": "node esbuild.config.js --watch",
 		"package": "node esbuild.config.js --production",
+		"typecheck": "tsc -p ./",
 		"test-compile": "tsc -p ./",
 		"test-watch": "tsc -watch -p ./",
+		"unit": "mocha out/test/unit/**/*.test.js --exit",
 		"pretest": "npm run test-compile && npm run lint",
 		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/test/runTest.js",
+		"vsix": "vsce package",
+		"check": "npm run lint && npm run typecheck && npm run unit && npm run package"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.3",
@@ -415,16 +410,13 @@
 		"@types/vscode": "^1.59.0",
 		"@typescript-eslint/eslint-plugin": "^4.26.0",
 		"@typescript-eslint/parser": "^4.26.0",
+		"@vscode/vsce": "^3.2.1",
 		"esbuild": "^0.27.2",
 		"eslint": "^7.27.0",
 		"glob": "^7.1.7",
 		"mocha": "^9.1.1",
-		"ts-loader": "^9.2.2",
 		"typescript": "^4.3.2",
-		"vscode-test": "^1.5.2",
-		"webpack": "^5.54.0",
-		"webpack-cli": "^4.7.0",
-		"webpack-parallel-uglify-plugin": "^2.0.0"
+		"vscode-test": "^1.5.2"
 	},
 	"dependencies": {
 		"chardet": "^1.3.0",
