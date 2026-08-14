@@ -3,6 +3,7 @@ import { BookParser } from './BookParser';
 import { TxtParser } from './TxtParser';
 import { EpubParser } from '../epub/EpubParser';
 import { ChapterIndexCache } from '../cache/chapterIndexCache';
+import { ChapterLineMatcher } from '../matcher/types';
 
 /** 明确的不支持格式错误（区别于未知错误，便于 UI 给出可读提示） */
 export class UnsupportedFormatError extends Error {
@@ -20,6 +21,8 @@ export interface ParserFactoryOptions {
 	readFile?: FileReader;
 	/** 章节正则提供者（仅 TXT 使用；缺省用内置默认） */
 	chapterRegex?: () => RegExp;
+	/** 章节行匹配器提供者（Phase 7，仅 TXT 使用；优先于 chapterRegex） */
+	chapterMatcher?: () => ChapterLineMatcher;
 	/** 章节索引缓存（仅 TXT 使用；P3-03） */
 	cache?: ChapterIndexCache;
 }
@@ -41,6 +44,7 @@ export class ParserFactory {
 		if (ext === '.txt') {
 			return new TxtParser(filePath, readFile, {
 				chapterRegex: options.chapterRegex,
+				chapterMatcher: options.chapterMatcher,
 				cache: options.cache,
 			});
 		}

@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Phase 6（阅读进度条，P3）
+
+- **进度计算（P6-01）**：`computeProgress` 纯函数，`(chapterIndex + chapterProgress) / totalChapters`；头部计入总数（ADR-006）；空书不除零；钳制与非法输入安全。
+- **轻量 UI（P6-02）**：Reader 底部 3px 进度细条 + 右下角文字（`第 x / y 章 · 本章 % · 全书 %`）；`pointer-events:none` 不遮挡正文；切章/滚动实时更新。
+- **控制滚动成本（P6-03）**：rAF 合并（每帧最多一次 DOM 写）+ 段落定位复用二分；自动滚屏/滚动无卡顿。
+- P6-04 可选跳转：非首版门槛，记录 backlog。
+
+### Phase 7（中文章节识别升级，P4）
+
+- **matcher pipeline（P7-01/02）**：5 个可单独测试的 matcher（第X章 / 卷部篇集 / 节 / 序尾后记番外 / 英文 Chapter）替代单巨型正则；17 种标题正例全识别，10 种正文/对话反例不识别；**修复 P0 已知缺陷**（`第二章的内容。` 不再误判为章节）。
+- **保留自定义规则（P7-03 / ADR-012）**：用户显式规则完全替换内置；无效 regex 提示并安全回退；每次调用重读配置。
+- **缓存联动（P7-04）**：`CHAPTER_MATCHER_VERSION` + `ruleKey`（内置 `matcher:vN` / 用户 `user:<source>`）→ ruleHash 变化自动失效；`TXT_PARSER_VERSION` 1→2，旧缓存被 cleanup 清理。
+- 性能：30 MB 合成数据 matcher 扫描 **107ms**（489137 行 / 9484 章，无灾难性回溯）。
+- 单测 170 → 225；新增 ADR-012。
 ### Phase 5（全书搜索，P3）
 
 - **搜索 contract（P5-01 / ADR-011）**：SearchQuery/SearchResult（chapterId/index/title、paragraphIndex、preview、matchStart/Length）；BookSearch 契约。

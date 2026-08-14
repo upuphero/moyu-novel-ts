@@ -109,3 +109,44 @@ export function splitByRegex(s: string, regex: RegExp): ChapterInfo[] {
 	}
 	return arr;
 }
+
+/**
+ * 用行匹配器分章（Phase 7，P7-01）。
+ *
+ * 头部语义与 splitByRegex 一致（i=0 头部，txtIndex=-2 hack，配合 s='头部'）；
+ * 重复标题判定沿用 isRepeatChapter；章节原始行保留（含 \r\t 等）保证 txtIndex 偏移正确。
+ *
+ * @param s 全书文本
+ * @param matcher 行匹配器（内置 matcher pipeline 或用户自定义正则包装；返回标题或 null）
+ */
+export function splitByMatcher(
+	s: string,
+	matcher: { match(line: string): string | null }
+): ChapterInfo[] {
+	const arr: ChapterInfo[] = [{ txtIndex: -2, s: "头部", i: 0, size: s.length }];
+	const lines = s.split("\n");
+	let offset = 0;
+	let lastItem = arr[0];
+	let i = 0;
+	for (const raw of lines) {
+		const line = raw.replace(/\r$/, "").trim();
+		const title = matcher.match(line);
+		if (title !== null && title.length > 0) {
+			const item: ChapterInfo = {
+				s: raw,
+				i: i + 1,
+				txtIndex: offset,
+				size: 0,
+			};
+			if (!isRepeatChapter(item, lastItem)) {
+				arr.push(item);
+				lastItem.size = offset - lastItem.txtIndex;
+				lastItem = item;
+				i++;
+			}
+		}
+		offset += raw.length + 1; // +1 换行符
+	}
+	lastItem.size = s.length - lastItem.txtIndex;
+	return arr;
+}

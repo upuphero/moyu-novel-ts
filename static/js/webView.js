@@ -78,6 +78,11 @@ let fn = {
 		}
 		// console.warn('开始显示章节', data.title, cache, data);
 		setCache("showChapter", data);
+		// P6：缓存总章数（含头部；空书防御）
+		cache.totalChapters =
+			typeof data.totalChapters === "number" && data.totalChapters > 0
+				? data.totalChapters
+				: 0;
 		render(data.title, data.list);
 		// 初次渲染后,renderId 是1
 		if (!isFirstRender()) {
@@ -93,6 +98,8 @@ let fn = {
 			// P2-04：应用恢复锚点（段落 → 本章进度 → 旧 pixel）
 			applyRestore(data.restore);
 		}
+		// P6：切章后立即更新进度条
+		scheduleProgressUpdate();
 		setTimeout(() => {
 			dispatchCustomEvent("showChapterAfter", data);
 		}, 0);
@@ -148,6 +155,45 @@ export function changeTheme(index) {
 	} else if (rule) {
 		rule.style = "";
 	}
+}
+
+/** P6：进度条 rAF 合并标记 */
+let progressRaf = 0;
+
+/**
+ * 更新底部阅读进度条（P6-02/03）。
+ * 公式与 core/progress/progressBar.ts 一致：
+ * 全书% = (chapterIndex + chapterProgress) / totalChapters（空书不除零）。
+ * 每次 scroll 最多每动画帧更新一次（rAF 合并）。
+ */
+function updateProgressBar() {
+	const cur = cache.showChapter || {};
+	if (!el.progressBar) return;
+	const total = cache.totalChapters || 0;
+	const index =
+		typeof cur.chapterIndex === "number" && cur.chapterIndex >= 0
+			? cur.chapterIndex
+			: 0;
+	const cp = chapterProgress();
+	const bp = total > 0 ? Math.min(1, Math.max(0, (index + cp) / total)) : 0;
+	if (el.progressBarFill) {
+		el.progressBarFill.style.width = (bp * 100).toFixed(2) + "%";
+	}
+	if (el.progressBarText) {
+		el.progressBarText.textContent =
+			total > 0
+				? `${index + 1} / ${total} 章 · 本章 ${Math.round(cp * 100)}% · 全书 ${Math.round(bp * 100)}%`
+				: "";
+	}
+}
+
+/** rAF 合并调度（P6-03：每帧最多一次 DOM 写） */
+function scheduleProgressUpdate() {
+	if (progressRaf) return;
+	progressRaf = requestAnimationFrame(() => {
+		progressRaf = 0;
+		updateProgressBar();
+	});
 }
 
 /**
@@ -381,6 +427,8 @@ window.addEventListener("DOMContentLoaded", function () {
 		}
 		// P2-03：滚动防抖后上报语义进度（段落 + 本章百分比）
 		reportProgress();
+		// P6-03：rAF 合并更新进度条（每帧最多一次）
+		scheduleProgressUpdate();
 	}
 });
 

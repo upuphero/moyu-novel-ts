@@ -40,6 +40,10 @@ export function initEl() {
 		sideNextBtns: document.querySelectorAll(".function-box .side-next-btn"),
 		btn2: document.querySelector(".btn2"),
 		sheet,
+		// P6：阅读进度条
+		progressBar: document.querySelector(".progress-bar"),
+		progressBarFill: document.querySelector(".progress-bar-fill"),
+		progressBarText: document.querySelector(".progress-bar-text"),
 	};
 	el = _el;
 	return _el;

@@ -1,9 +1,11 @@
 import { basename, extname } from 'path';
 import {
 	splitByRegex,
+	splitByMatcher,
 	ChapterInfo as SplitItem,
 } from '../../splitCore';
 import { DEFAULT_CHAPTER_REGEX } from '../../legacy/ids';
+import { ChapterLineMatcher } from '../matcher/types';
 import decodeEncoding from '../../file/encoding';
 import {
 	BookFormat,
@@ -37,7 +39,12 @@ export interface TxtParserOptions {
 	 * 缺省时使用内置默认正则。
 	 */
 	chapterRegex?: () => RegExp;
-	/** 分章实现（默认 splitByRegex；测试注入计数包装做可观测性，P3-04） */
+	/**
+	 * 章节行匹配器提供者（Phase 7，P7-03）：优先于 chapterRegex。
+	 * 内置 matcher pipeline 或用户自定义正则包装；ruleKey 参与缓存失效（P7-04）。
+	 */
+	chapterMatcher?: () => ChapterLineMatcher;
+	/** 分章实现（默认 splitByRegex/splitByMatcher；测试注入计数包装做可观测性，P3-04） */
 	split?: (text: string, regex: RegExp) => SplitItem[];
 	/** 文件 stat（默认 node:fs；测试注入以模拟 mtime/size 变化） */
 	stat?: (path: string) => Promise<FileStat>;
@@ -89,10 +96,12 @@ export class TxtParser implements BookParser {
 		return { size: st.size, mtimeMs: st.mtimeMs };
 	}
 
-	/** 规则 hash：正则 source 的 sha256 前 16 hex（P3-02） */
+	/** 规则 hash：正则 source 或 matcher ruleKey 的 sha256 前 16 hex（P3-02 / P7-04） */
 	private get ruleHash(): string {
+		const matcher = this.options.chapterMatcher?.();
+		const key = matcher ? matcher.ruleKey : this.regex.source;
 		return createHash('sha256')
-			.update(this.regex.source)
+			.update(key)
 			.digest('hex')
 			.slice(0, 16);
 	}
@@ -144,9 +153,15 @@ export class TxtParser implements BookParser {
 		// 未命中/失效/无 stat：读全文 + split（+ 写缓存）
 		const buffer = await this.readFile(this.filePath);
 		this.text = decodeEncoding(buffer);
-		this.items = this.options.split
-			? this.options.split(this.text, this.regex)
-			: splitByRegex(this.text, this.regex);
+		const matcher = this.options.chapterMatcher?.();
+		if (matcher) {
+			// P7：matcher pipeline（或用户自定义规则）分章
+			this.items = splitByMatcher(this.text, matcher);
+		} else {
+			this.items = this.options.split
+				? this.options.split(this.text, this.regex)
+				: splitByRegex(this.text, this.regex);
+		}
 		this.infos = this.buildInfos(this.items);
 		this.metadata = this.buildMetadata(buffer.byteLength, this.infos.length);
 		this.lastStat = stat;

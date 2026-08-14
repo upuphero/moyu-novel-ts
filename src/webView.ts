@@ -97,13 +97,24 @@ export async function showChapter(
 	bookId: string,
 	chapterId: string,
 	chapterIndex: number,
-	highlight?: HighlightAnchor
+	highlight?: HighlightAnchor,
+	totalChapters?: number
 ) {
 	const restore = computeRestore(bookId, chapterId, chapterIndex, bookPath, title);
 	if (!panel) {
 		// 初次显示 webView，则需要初始化显示滚动高度
 		await createWebView();
-		await initWebView(title, list, bookPath, bookId, chapterId, chapterIndex, restore, highlight);
+		await initWebView(
+			title,
+			list,
+			bookPath,
+			bookId,
+			chapterId,
+			chapterIndex,
+			restore,
+			highlight,
+			totalChapters
+		);
 		return;
 	} else if (!panel.visible) {
 		// 如果当前 webView 存在，并且被隐藏了，则显示
@@ -118,6 +129,7 @@ export async function showChapter(
 		chapterIndex,
 		restore,
 		highlight,
+		totalChapters,
 	});
 }
 
@@ -159,7 +171,8 @@ async function initWebView(
 	chapterId: string,
 	chapterIndex: number,
 	restore: RestoreAnchor,
-	highlight?: HighlightAnchor
+	highlight?: HighlightAnchor,
+	totalChapters?: number
 ) {
 	const readSetting = config.get("readSetting", {});
 	const themeSetting = config.get("theme", {
@@ -184,6 +197,7 @@ async function initWebView(
 		chapterIndex,
 		restore,
 		highlight,
+		totalChapters,
 	});
 	await postMsg("setting", setting);
 }

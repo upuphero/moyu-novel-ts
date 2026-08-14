@@ -82,6 +82,8 @@ CI：`.github/workflows/ci.yml`（lint / typecheck / unit / production bundle / 
 
 ## 已知限制
 
+- 阅读进度条：Reader 底部实时显示当前章、本章/全书百分比；主题兼容不挡正文。
+- 章节识别升级：默认多类别 matcher（第X章/卷部篇集节、序尾后记翻外、英文 Chapter），正文句子不再误判为章节；自定义规则优先。
 - 全书搜索：`Moyu Novel: 全书搜索` 命令或书架标题栏按钮，TXT/EPUB 可搜索并点击定位高亮。
 - 支持本地 TXT 与 reflowable、无 DRM、以文字为主的 EPUB 2/3（不支持 ZIP64、图片不渲染、不套用出版社 CSS，见 ADR-010）。
 - 文件移动/重命名后阅读进度不自动关联（bookId 基于路径哈希，见 ADR-007）；重新打开章节即可重建。

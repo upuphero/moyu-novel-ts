@@ -9,7 +9,7 @@ import {
 } from '../legacy/ids';
 import { ParserFactory } from '../core/parser/ParserFactory';
 import { BookParser } from '../core/parser/BookParser';
-import { getChapterRegex } from '../split';
+import { getChapterMatcher, getChapterRegex } from '../split';
 import { vscodeFileReader } from '../file/vscodeAdapter';
 import { generateBookId } from '../core/progress/id';
 import { SHOW_READ_CHAPTER_KEY } from '../core/progress/state';
@@ -64,6 +64,8 @@ export class Book extends vscode.TreeItem {
 		try {
 			this.parser = ParserFactory.create(uri.fsPath, {
 				readFile: vscodeFileReader,
+				// P7：默认走 matcher pipeline（用户自定义规则完全替换，P7-03/ADR-012）
+				chapterMatcher: getChapterMatcher,
 				chapterRegex: getChapterRegex,
 				cache: getChapterIndexCache() ?? undefined,
 			});

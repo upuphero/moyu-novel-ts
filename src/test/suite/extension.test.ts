@@ -151,6 +151,39 @@ test("EPUB：损坏章节不崩溃（P4-06 错误隔离）", async () => {
 			fsx.rmSync(dir, { recursive: true, force: true });
 		}
 	});
+test("内置章节 matcher：正例识别、正文反例不识别（P7-02）", async () => {
+		const { getChapterMatcher } = await import("../../split");
+		const matcher = getChapterMatcher();
+		assert.ok(matcher, "getChapterMatcher 应返回 matcher");
+		assert.strictEqual(matcher.match("第一章 风起"), "第一章 风起");
+		assert.strictEqual(matcher.match("Chapter 1"), "Chapter 1");
+		// P0 已知缺陷修复：正文行不再误判为章节
+		assert.strictEqual(matcher.match("第二章的内容。"), null);
+		assert.strictEqual(matcher.match("他说：“第一章讲完了。”"), null);
+	});
+
+	test("无效用户 regex 安全回退内置 matcher（P7-03）", async () => {
+		const config = vscode.workspace.getConfiguration("novelLook");
+		const before = config.get("match.chapterName");
+		try {
+			await config.update("match.chapterName", "([非法", true);
+			const { getChapterMatcher } = await import("../../split");
+			const matcher = getChapterMatcher();
+			// 回退内置：仍能识别正例
+			assert.strictEqual(matcher.match("第一章 风起"), "第一章 风起");
+		} finally {
+			await config.update("match.chapterName", before, true);
+		}
+	});
+
+	test("进度计算纯函数冒烟（P6-01）", async () => {
+		const { computeProgress } = await import("../../core/progress/progressBar");
+		const p = computeProgress(4, 0.5, 10);
+		assert.strictEqual(p.bookPercent, 0.45);
+		const empty = computeProgress(0, 0.5, 0);
+		assert.strictEqual(empty.bookPercent, 0, "空书不除零");
+	});
+
 test("Sample test（保留最小冒烟）", () => {
 		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
 		assert.strictEqual(-1, [1, 2, 3].indexOf(0));

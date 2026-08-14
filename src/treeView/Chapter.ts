@@ -86,6 +86,11 @@ export class Chapter extends vscode.TreeItem {
 		};
 		setState('lastOpenChapter', data);
 		// P0-03-7：携带书身份（fullPath），WebView 端不再只按章节标题去重
+		// P6：总章数（含头部）；章节列表未初始化时先展开一次（成本低，走解析器缓存）
+		const totalChapters =
+			this.book.chapterList.length > 0
+				? this.book.chapterList.length
+				: (await this.book.getChapterList()).length;
 		showChapter(
 			this.label,
 			content.lines,
@@ -93,7 +98,8 @@ export class Chapter extends vscode.TreeItem {
 			this.book.bookId,
 			this.info.id,
 			this.i,
-			highlight
+			highlight,
+			totalChapters
 		);
 	}
 	/**
