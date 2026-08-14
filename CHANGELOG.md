@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Phase 8（Reader UI 与 WebView TypeScript，P4）
+
+- **WebView TS（P8-01/02）**：6 个 static/js 业务模块全部迁移为 `src/webview/*.ts`；esbuild 同时产出 Extension Host 与 WebView bundle（`static/js/webview.bundle.js`）；`static/js` 只保留构建产物。
+- **共享消息 contract（P8-01/05）**：`src/shared/contract.ts` 为双向消息单一事实来源；两侧均做 runtime validation，非法 payload 拒绝并告警。
+- **消息协议修复（P8-04）**：移除 `Promise.race(..., sleep(5))` 临时绕过，postMsg 改单向发送、错误可诊断。
+- **安全加固（P8-05）**：nonce + CSP（无远程源）；主题 CSS 值 sanitize（防 `;{}`/expression/url()/javascript: 注入）；文本渲染沿用 textContent。
+- **布局改善（P8-03）**：正文最大宽度 46em、行高 1.8、段距 1.2em、标题间距；按钮 hover；窄窗口 responsive。
+- 单测 225 → 244；双 tsc（extension + webview）纳入 typecheck。
 ### Phase 6（阅读进度条，P3）
 
 - **进度计算（P6-01）**：`computeProgress` 纯函数，`(chapterIndex + chapterProgress) / totalChapters`；头部计入总数（ADR-006）；空书不除零；钳制与非法输入安全。

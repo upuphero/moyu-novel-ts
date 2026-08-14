@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import { Book } from './Book';
 import { setState } from '../util/util';
 
-import { HighlightAnchor, showChapter } from '../webView';
+import { showChapter } from '../webView';
+import { HighlightAnchor } from '../shared/contract';
 import { ChapterInfo } from '../core/book/model';
 
 /** 当前显示章节 */

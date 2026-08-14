@@ -10,11 +10,12 @@
 
 	<meta charset="UTF-8" />
 	<title>阅读</title>
-	<!-- 控制引用权限（P0-10：最低安全边界，禁止远程资源；#csp 在扩展侧替换为 cspSource。Phase 8 强化 nonce/CSP 与消息校验） -->
+	<!-- P8-05：nonce + CSP（无远程源；#csp/#nonce 在扩展侧替换） -->
 	<meta http-equiv="Content-Security-Policy"
-		content="default-src 'none'; script-src #csp; style-src #csp 'unsafe-inline'; img-src #csp data:; font-src #csp;" />
+		content="default-src 'none'; script-src 'nonce-#nonce' #csp; style-src 'nonce-#nonce' #csp 'unsafe-inline'; img-src #csp data:; font-src #csp;" />
 	<link rel="stylesheet" href="@./style.css" />
-	<script src="@./js/webView.js" type="module"></script>
+	<!-- P8-01：WebView TS 构建产物（esbuild 产出 static/js/webview.bundle.js） -->
+	<script nonce="#nonce" src="@./js/webview.bundle.js"></script>
 
 </head>
 

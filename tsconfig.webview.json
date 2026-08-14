@@ -1,0 +1,26 @@
+{
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "node",
+		"target": "es2020",
+		"lib": [
+			"es2020",
+			"dom",
+			"dom.iterable"
+		],
+		"strict": true,
+		"noEmit": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"noImplicitReturns": true
+	},
+	"include": [
+		"src/webview/**/*.ts",
+		"src/shared/**/*.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"out",
+		"dist"
+	]
+}

@@ -82,6 +82,7 @@ CI：`.github/workflows/ci.yml`（lint / typecheck / unit / production bundle / 
 
 ## 已知限制
 
+- 读者 UI：正文行宽/行高/段距优化、按钮 hover、窄窗口自适应；WebView 全部 TS 化 + CSP/nonce 加固。
 - 阅读进度条：Reader 底部实时显示当前章、本章/全书百分比；主题兼容不挡正文。
 - 章节识别升级：默认多类别 matcher（第X章/卷部篇集节、序尾后记翻外、英文 Chapter），正文句子不再误判为章节；自定义规则优先。
 - 全书搜索：`Moyu Novel: 全书搜索` 命令或书架标题栏按钮，TXT/EPUB 可搜索并点击定位高亮。

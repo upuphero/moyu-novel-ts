@@ -2,12 +2,13 @@ import * as vscode from "vscode";
 import * as file from "./file/file";
 
 import * as config from "./config";
-import { setState, getExtensionUri, getStateDefault, sleep } from "./util/util";
+import { setState, getExtensionUri, getStateDefault } from "./util/util";
 import { command } from "./treeView/TreeViewProvider";
 import { getTargetStaticDir } from "./file/file";
 import { getProgressService } from "./core/progress/ProgressService";
 import { ReadingProgress } from "./core/progress/types";
 import { SAVE_SCROLL_KEY } from "./legacy/ids";
+import { isValidWebviewMessage, SaveProgressData, HighlightAnchor } from "./shared/contract";
 
 let content: vscode.ExtensionContext;
 
@@ -27,21 +28,6 @@ export interface RestoreAnchor {
 	paragraphIndex?: number;
 	chapterProgress?: number;
 	pixel?: number;
-}
-
-/** 搜索结果高亮锚点（P5-04） */
-export interface HighlightAnchor {
-	keyword: string;
-	paragraphIndex: number;
-}
-
-/** WebView 上报的进度（P2-03） */
-interface SaveProgressData {
-	bookId: string;
-	chapterId: string;
-	chapterIndex: number;
-	paragraphIndex: number;
-	chapterProgress: number;
 }
 
 /**
@@ -213,6 +199,10 @@ async function getWebviewContent(uri: vscode.Uri) {
 	s = s.replace(/(#csp)/g, () => {
 		return panel!.webview.cspSource;
 	});
+	// P8-05：nonce 每次会话随机生成（CSP script-src 'nonce-...'）
+	s = s.replace(/(#nonce)/g, () => {
+		return getNonce();
+	});
 	s = s.replace(/(@)(.+?)/g, (_m, _sign, $2) => {
 		return panel!.webview.asWebviewUri(vscode.Uri.joinPath(uri, $2)).toString();
 	});
@@ -220,21 +210,14 @@ async function getWebviewContent(uri: vscode.Uri) {
 }
 
 /**
- * 发送消息
- * @param type 操作类型
- * @param data 数据
+ * 发送消息（P8-04：单向发送，不等待回执；postMessage 返回 Thenable 不 await，
+ * 移除旧的 Promise.race + sleep(5) 临时绕过，错误可诊断）。
  */
-async function postMsg(type: string, data: any) {
+function postMsg(type: string, data: unknown) {
 	try {
-		// FIXME(Phase 8, P8-04): 移除 Promise.race + sleep(5) 临时绕过，改为 request/response ID
-		await Promise.race([
-			// 发送消息
-			panel!.webview.postMessage({ type, data }),
-			// 最多等待 5ms
-			sleep(5),
-		]);
+		void panel!.webview.postMessage({ type, data });
 	} catch (error) {
-		console.error(error);
+		console.error("postMsg 失败", type, error);
 	}
 }
 /**************************************
@@ -376,18 +359,15 @@ export let fn = {
 	},
 };
 
-type MessageHandle = typeof fn;
-
-export type MessageTypes = keyof MessageHandle;
-type Message<T extends MessageTypes> = {
-	type: T;
-	data: Parameters<MessageHandle[T]>[0];
-};
-async function onMessage<T extends MessageTypes>(e: Message<T>) {
-	// TODO: 日志
+async function onMessage(e: unknown) {
 	console.log("收到webView message:  ", e);
-	// FIXME: 类型推断问题，Phase 8 改为完整 runtime validation
-	fn[e.type]?.(e.data as never);
+	// P8-05：双向消息 runtime validation——非法类型/payload 拒绝并告警
+	if (!isValidWebviewMessage(e)) {
+		console.warn("忽略非法 WebView 消息:", e);
+		return;
+	}
+	const handler = fn[e.type as keyof typeof fn];
+	handler?.(e.data as never);
 }
 
 export async function closeWebView() {
@@ -395,4 +375,15 @@ export async function closeWebView() {
 		panel.dispose();
 		panel = null;
 	}
+}
+
+/** 生成随机 nonce（P8-05：每次 WebView 会话唯一） */
+function getNonce(): string {
+	const chars =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	let text = "";
+	for (let i = 0; i < 32; i++) {
+		text += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return text;
 }

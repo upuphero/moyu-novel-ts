@@ -184,6 +184,43 @@ test("内置章节 matcher：正例识别、正文反例不识别（P7-02）", a
 		assert.strictEqual(empty.bookPercent, 0, "空书不除零");
 	});
 
+test("WebView bundle 存在且 html 引用它（P8-01）", async () => {
+		const fsPath = path.resolve(__dirname, "../../../static/js/webview.bundle.js");
+		assert.ok(fsx.existsSync(fsPath), "webview.bundle.js 应已构建");
+		const bundle = fsx.readFileSync(fsPath, "utf8");
+		assert.ok(bundle.includes("showChapter"), "bundle 应含 Reader 逻辑");
+		const htmlPath = path.resolve(__dirname, "../../../static/webView.html");
+		const html = fsx.readFileSync(htmlPath, "utf8");
+		assert.ok(html.includes("webview.bundle.js"), "html 应引用 bundle");
+		assert.ok(html.includes("nonce-"), "html 应带 nonce 占位（CSP，P8-05）");
+		assert.ok(!html.includes("webView.js"), "旧 module 引用已移除");
+	});
+
+	test("static/js 不再承载未类型检查的业务源文件（P8 gate）", async () => {
+		const dir = path.resolve(__dirname, "../../../static/js");
+		const files = fsx.readdirSync(dir);
+		for (const f of files) {
+			assert.ok(
+				f === "webview.bundle.js" || f.endsWith(".map"),
+				`static/js 应只含构建产物，发现: ${f}`
+			);
+		}
+	});
+
+	test("消息 contract：extension 侧拒绝非法 WebView 消息（P8-05）", async () => {
+		const { isValidWebviewMessage } = await import("../../shared/contract");
+		assert.ok(!isValidWebviewMessage({ type: "changeUseTheme", data: -5 }));
+		assert.ok(!isValidWebviewMessage({ type: "saveScroll", data: { key: 1, value: 2 } }));
+		assert.ok(isValidWebviewMessage({ type: "zoom", data: 1.2 }));
+	});
+
+	test("主题 CSS 安全：注入值被过滤（P8-05）", async () => {
+		const { getThemeCssText } = await import("../../shared/theme");
+		const css = getThemeCssText({ bg: "red; } body { display:none }", color: "#FFF" });
+		assert.ok(!css.includes("display:none"));
+		assert.ok(css.includes("--color:#FFF"));
+	});
+
 test("Sample test（保留最小冒烟）", () => {
 		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
 		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
