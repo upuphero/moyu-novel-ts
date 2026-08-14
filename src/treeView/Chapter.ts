@@ -5,6 +5,7 @@ import { setState } from '../util/util';
 import { showChapter } from '../webView';
 import { HighlightAnchor } from '../shared/contract';
 import { ChapterInfo } from '../core/book/model';
+import { Command } from '../legacy/ids';
 
 /** 当前显示章节 */
 export let curChapter: Chapter;
@@ -60,7 +61,7 @@ export class Chapter extends vscode.TreeItem {
 		this.i = info.index;
 		this.info = info;
 		this.book = book;
-		this.command = { title: '', command: 'novel-look.showChapter', arguments: [this] }; // 执行命令
+		this.command = { title: '', command: Command.ShowChapter, arguments: [this] }; // 执行命令
 		this.isRead = isRead;
 	}
 

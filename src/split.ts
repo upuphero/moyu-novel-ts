@@ -21,7 +21,7 @@ export function getChapterRegex(): RegExp {
 	if (compiled) {
 		return compiled;
 	}
-	console.error("novelLook.match.chapterName 非法,已回退默认正则");
+	console.error("moyuNovel.match.chapterName 非法,已回退默认正则");
 	vscodeShowErrorMessage("章节匹配正则非法,已回退默认正则");
 	return new RegExp(DEFAULT_CHAPTER_REGEX, "gm");
 }
@@ -40,7 +40,7 @@ function vscodeShowErrorMessage(message: string) {
 
 /**
  * 获取用户章节匹配器（Phase 7，P7-03 / ADR-012）：
- * - 用户显式设置 `novelLook.match.chapterName` 且有效 → **完全替换**内置 matcher（不 fallback）；
+ * - 用户显式设置 `moyuNovel.match.chapterName` 且有效 → **完全替换**内置 matcher（不 fallback）；
  * - 无效 regex → 提示并安全回退内置 matcher；
  * - 未设置 → 内置 matcher pipeline（多类别，P7-02）。
  * 每次调用重新读取配置（P0-03-5）。
@@ -52,7 +52,7 @@ export function getChapterMatcher(): ChapterLineMatcher {
 		if (compiled) {
 			return userChapterLineMatcher(compiled, pattern);
 		}
-		console.error("novelLook.match.chapterName 非法,已回退内置 matcher");
+		console.error("moyuNovel.match.chapterName 非法,已回退内置 matcher");
 		vscodeShowErrorMessage("章节匹配正则非法,已回退内置规则");
 	}
 	return builtinChapterLineMatcher;

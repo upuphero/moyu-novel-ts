@@ -9,6 +9,7 @@ import { BookDir } from "./BookDir";
 import {
 	IS_SHOW_READ_CHAPTER_KEY,
 	LAST_OPEN_CHAPTER_KEY,
+	TREE_VIEW_ID,
 } from "../legacy/ids";
 
 /**
@@ -226,7 +227,7 @@ export async function createTreeView() {
 	const fileList = await file.getBookList();
 	console.log("createTreeView 执行", fileList);
 	bookrack = new Bookrack(fileList);
-	treeView = vscode.window.createTreeView<Bookrack>("novelLookTreeView", {
+	treeView = vscode.window.createTreeView<Bookrack>(TREE_VIEW_ID, {
 		// @ts-ignore
 		treeDataProvider: bookrack,
 	});

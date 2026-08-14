@@ -27,26 +27,27 @@
 	},
 	"icon": "img/fish.png",
 	"activationEvents": [
-		"onView:novelLookTreeView",
+		"onView:moyuNovelTreeView",
+		"onCommand:moyu-novel.openWebView",
 		"onCommand:novel-look.openWebView",
 		"onCommand:moyu-novel.searchBook"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
-		"title": "novel-look",
+		"title": "moyu-novel",
 		"configuration": {
 			"properties": {
-				"novelLook.match.novelName": {
+				"moyuNovel.match.novelName": {
 					"type": "string",
 					"default": "^.*\\.txt$",
 					"description": "小说名的正则,'\\'不需要转义"
 				},
-				"novelLook.match.chapterName": {
+				"moyuNovel.match.chapterName": {
 					"type": "string",
 					"default": "^(?:[ \\t\\r\\f\\v]*)(第[一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟万零〇\\d]*[篇节部卷][ \\t\\r\\f\\v]*.*[ \\t\\r\\f\\v]*)?第[一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟万零〇\\d]*章[^\\n\\r]*$",
 					"description": "匹配章节名称的正则,'\\'不需要转义"
 				},
-				"novelLook.ignoreDir": {
+				"moyuNovel.ignoreDir": {
 					"type": "array",
 					"default": [
 						"tmp",
@@ -54,40 +55,40 @@
 					],
 					"description": "需要忽略的文件夹的名称"
 				},
-				"novelLook.ignoreFileName": {
+				"moyuNovel.ignoreFileName": {
 					"type": "array",
 					"default": [],
 					"description": "需要忽略的文件的名称"
 				},
-				"novelLook.showRefreshStaticFile": {
+				"moyuNovel.showRefreshStaticFile": {
 					"type": "boolean",
 					"default": false,
 					"description": "是否显示刷新静态文件按钮,开发时比较好用的一个功能"
 				},
-				"novelLook.readSetting._": {
+				"moyuNovel.readSetting._": {
 					"type": "string",
 					"default": "说明",
 					"description": "说明(此项无需修改)\n修改阅读设置后,需要重新打开webView以读取设置"
 				},
-				"novelLook.readSetting.lineIndent": {
+				"moyuNovel.readSetting.lineIndent": {
 					"type": "number",
 					"minimum": 0,
 					"default": 2,
 					"description": "每一行开头的缩进量,em"
 				},
-				"novelLook.readSetting.rootFontSize": {
+				"moyuNovel.readSetting.rootFontSize": {
 					"type": "number",
 					"minimum": 1,
 					"default": 20,
 					"description": "字体大小(html字体大小,正文字体为1rem)"
 				},
-				"novelLook.readSetting.titleSize": {
+				"moyuNovel.readSetting.titleSize": {
 					"type": "number",
 					"minimum": 1,
 					"default": 1.6,
 					"description": "章节名称的字体大小,单位是rem (P0-08: 已贡献配置,当前 Reader 尚未消费,保留不删)"
 				},
-				"novelLook.readSetting.zoom": {
+				"moyuNovel.readSetting.zoom": {
 					"type": "number",
 					"minimum": 0.1,
 					"maximum": 5,
@@ -95,31 +96,31 @@
 					"scope": "machine",
 					"description": "字体大小的缩放倍数,字体实际大小=root*zoom,与页面内Ctrl+滚轮缩放的值一致"
 				},
-				"novelLook.readSetting.scrollSpeed": {
+				"moyuNovel.readSetting.scrollSpeed": {
 					"type": "number",
 					"minimum": 0,
 					"default": 144,
 					"scope": "machine",
 					"description": "自动滚动速度(每秒多少px)  推荐 72, 96, 120, 144, 168, 192\n这个值如果很低,会让人产生一卡一卡的感觉"
 				},
-				"novelLook.readSetting.scrollEndTime": {
+				"moyuNovel.readSetting.scrollEndTime": {
 					"type": "number",
 					"minimum": 0,
 					"default": 3000,
 					"description": "滚动到章节底部的等待时间(ms)"
 				},
-				"novelLook.readSetting.scrollStartTime": {
+				"moyuNovel.readSetting.scrollStartTime": {
 					"type": "number",
 					"minimum": 0,
 					"default": 3000,
 					"description": "自动切换到下一章之后,等待多少时间开始滚屏(ms)"
 				},
-				"novelLook.readSetting.titleCenter": {
+				"moyuNovel.readSetting.titleCenter": {
 					"type": "boolean",
 					"default": false,
 					"description": "title居中"
 				},
-				"novelLook.readSetting.screenDirection": {
+				"moyuNovel.readSetting.screenDirection": {
 					"type": "number",
 					"enum": [
 						1,
@@ -131,11 +132,215 @@
 					"scope": "machine",
 					"description": "屏幕方向(上右下左1234)"
 				},
-				"novelLook.theme.use": {
+				"moyuNovel.theme.use": {
 					"type": "number",
 					"default": 0,
 					"scope": "machine",
 					"description": "使用几号主题,0为系统默认,其他的就是设置中的"
+				},
+				"moyuNovel.theme.custom": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"type": "string",
+								"default": "新主题",
+								"title": "主题名称"
+							},
+							"bg": {
+								"type": "string",
+								"default": "#000",
+								"title": "背景颜色"
+							},
+							"color": {
+								"type": "string",
+								"default": "#FFF",
+								"title": "文字颜色"
+							},
+							"btnBg": {
+								"type": "string",
+								"default": "#000",
+								"title": "按钮背景颜色"
+							},
+							"btnColor": {
+								"type": "string",
+								"default": "#FFF",
+								"title": "按钮文字颜色"
+							},
+							"btnActive": {
+								"type": "string",
+								"default": "#222",
+								"title": "按钮悬浮或聚焦时的背景颜色"
+							},
+							"btnActiveBorder": {
+								"type": "string",
+								"default": "#FFF",
+								"title": "按钮按下时的边框颜色"
+							},
+							"navBg": {
+								"type": "string",
+								"default": "#000",
+								"title": "可选属性,标题栏背景颜色,默认=bg"
+							},
+							"textColor": {
+								"type": "string",
+								"default": "#FFF",
+								"title": "可选属性,正文文字颜色,默认=color"
+							},
+							"fontWidght": {
+								"type": "string",
+								"default": "400",
+								"title": "已废弃:正文字体字重(历史拼写错误 key)。请使用 fontWidth。P0-08 保留 alias 兼容"
+							},
+							"fontWidth": {
+								"type": "string",
+								"default": "400",
+								"title": "可选属性,正文字体字重(如 400/700),默认 400"
+							},
+							"fontFamily": {
+								"type": "string",
+								"default": "",
+								"title": "可选属性,正文字体族(如 'Microsoft YaHei'),留空使用默认字体"
+							}
+						},
+						"required": [
+							"name"
+						]
+					},
+					"default": [
+						{
+							"name": "默认"
+						},
+						{
+							"name": "绿色",
+							"bg": "#cbd9c0",
+							"color": "#303b33",
+							"btnBg": "#cbd9c0",
+							"btnColor": "#303b33",
+							"btnActive": "rgba(0, 0, 0, 0.2)",
+							"btnActiveBorder": "#303b33"
+						}
+					],
+					"scope": "application",
+					"description": "用户自定义主题,格式\n{name:'名称',bg:'#000', color:'#000', btnBg:'#000', btnColor:'#000', btnActive:'#000', btnActiveBorder:'#000',navBg?:'#000',textColor?:'#000',fontWidth?:'400',fontFamily?:'字体'}[]"
+				},
+				"novelLook.match.novelName": {
+					"type": "string",
+					"default": "^.*\\.txt$",
+					"description": "小说名的正则,'\\'不需要转义",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.match.chapterName": {
+					"type": "string",
+					"default": "^(?:[ \\t\\r\\f\\v]*)(第[一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟万零〇\\d]*[篇节部卷][ \\t\\r\\f\\v]*.*[ \\t\\r\\f\\v]*)?第[一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟万零〇\\d]*章[^\\n\\r]*$",
+					"description": "匹配章节名称的正则,'\\'不需要转义",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.ignoreDir": {
+					"type": "array",
+					"default": [
+						"tmp",
+						"static"
+					],
+					"description": "需要忽略的文件夹的名称",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.ignoreFileName": {
+					"type": "array",
+					"default": [],
+					"description": "需要忽略的文件的名称",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.showRefreshStaticFile": {
+					"type": "boolean",
+					"default": false,
+					"description": "是否显示刷新静态文件按钮,开发时比较好用的一个功能",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting._": {
+					"type": "string",
+					"default": "说明",
+					"description": "说明(此项无需修改)\n修改阅读设置后,需要重新打开webView以读取设置",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.lineIndent": {
+					"type": "number",
+					"minimum": 0,
+					"default": 2,
+					"description": "每一行开头的缩进量,em",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.rootFontSize": {
+					"type": "number",
+					"minimum": 1,
+					"default": 20,
+					"description": "字体大小(html字体大小,正文字体为1rem)",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.titleSize": {
+					"type": "number",
+					"minimum": 1,
+					"default": 1.6,
+					"description": "章节名称的字体大小,单位是rem (P0-08: 已贡献配置,当前 Reader 尚未消费,保留不删)",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.zoom": {
+					"type": "number",
+					"minimum": 0.1,
+					"maximum": 5,
+					"default": 1,
+					"scope": "machine",
+					"description": "字体大小的缩放倍数,字体实际大小=root*zoom,与页面内Ctrl+滚轮缩放的值一致",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.scrollSpeed": {
+					"type": "number",
+					"minimum": 0,
+					"default": 144,
+					"scope": "machine",
+					"description": "自动滚动速度(每秒多少px)  推荐 72, 96, 120, 144, 168, 192\n这个值如果很低,会让人产生一卡一卡的感觉",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.scrollEndTime": {
+					"type": "number",
+					"minimum": 0,
+					"default": 3000,
+					"description": "滚动到章节底部的等待时间(ms)",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.scrollStartTime": {
+					"type": "number",
+					"minimum": 0,
+					"default": 3000,
+					"description": "自动切换到下一章之后,等待多少时间开始滚屏(ms)",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.titleCenter": {
+					"type": "boolean",
+					"default": false,
+					"description": "title居中",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.readSetting.screenDirection": {
+					"type": "number",
+					"enum": [
+						1,
+						2,
+						3,
+						4
+					],
+					"default": 1,
+					"scope": "machine",
+					"description": "屏幕方向(上右下左1234)",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
+				},
+				"novelLook.theme.use": {
+					"type": "number",
+					"default": 0,
+					"scope": "machine",
+					"description": "使用几号主题,0为系统默认,其他的就是设置中的",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
 				},
 				"novelLook.theme.custom": {
 					"type": "array",
@@ -222,7 +427,8 @@
 						}
 					],
 					"scope": "application",
-					"description": "用户自定义主题,格式\n{name:'名称',bg:'#000', color:'#000', btnBg:'#000', btnColor:'#000', btnActive:'#000', btnActiveBorder:'#000',navBg?:'#000',textColor?:'#000',fontWidth?:'400',fontFamily?:'字体'}[]"
+					"description": "用户自定义主题,格式\n{name:'名称',bg:'#000', color:'#000', btnBg:'#000', btnColor:'#000', btnActive:'#000', btnActiveBorder:'#000',navBg?:'#000',textColor?:'#000',fontWidth?:'400',fontFamily?:'字体'}[]",
+					"deprecationMessage": "已迁移至 moyuNovel.*，旧键仅兼容读取（新设置请使用 moyuNovel.*）"
 				}
 			}
 		},
@@ -232,57 +438,57 @@
 		},
 		"commands": [
 			{
-				"command": "novel-look.refreshFile",
+				"command": "moyu-novel.refreshFile",
 				"category": "小说阅读",
 				"icon": "img/refresh.png",
 				"title": "刷新"
 			},
 			{
-				"command": "novel-look.refreshStaticFile",
+				"command": "moyu-novel.refreshStaticFile",
 				"icon": "img/swap.png",
 				"title": "刷新static文件"
 			},
 			{
-				"command": "novel-look.openExplorer",
+				"command": "moyu-novel.openExplorer",
 				"category": "小说阅读",
 				"icon": "img/folder-open.png",
 				"title": "打开文件目录"
 			},
 			{
-				"command": "novel-look.openWebViewDir",
+				"command": "moyu-novel.openWebViewDir",
 				"category": "小说阅读",
 				"icon": "",
 				"title": "打开webView文件目录"
 			},
 			{
-				"command": "novel-look.showChapter",
+				"command": "moyu-novel.showChapter",
 				"category": "小说阅读",
 				"title": "打开本章"
 			},
 			{
-				"command": "novel-look.closeWebView",
+				"command": "moyu-novel.closeWebView",
 				"category": "小说阅读",
 				"title": "关闭窗口"
 			},
 			{
-				"command": "novel-look.openWebView",
+				"command": "moyu-novel.openWebView",
 				"category": "小说阅读",
 				"title": "打开窗口"
 			},
 			{
-				"command": "novel-look.showReadChapter",
+				"command": "moyu-novel.showReadChapter",
 				"category": "小说阅读",
 				"icon": "img/refresh.png",
 				"title": "取消折叠已读章节"
 			},
 			{
-				"command": "novel-look.hideReadChapter",
+				"command": "moyu-novel.hideReadChapter",
 				"category": "小说阅读",
 				"icon": "img/refresh.png",
 				"title": "折叠已读章节"
 			},
 			{
-				"command": "novel-look.clearReadChapter",
+				"command": "moyu-novel.clearReadChapter",
 				"category": "小说阅读",
 				"title": "清空已读章节"
 			},
@@ -295,12 +501,12 @@
 		],
 		"keybindings": [
 			{
-				"command": "novel-look.closeWebView",
+				"command": "moyu-novel.closeWebView",
 				"key": "alt+d",
 				"mac": "alt+d"
 			},
 			{
-				"command": "novel-look.openWebView",
+				"command": "moyu-novel.openWebView",
 				"key": "alt+s",
 				"mac": "alt+s"
 			}
@@ -308,65 +514,65 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "novel-look.refreshFile",
-					"when": "view == novelLookTreeView",
+					"command": "moyu-novel.refreshFile",
+					"when": "view == moyuNovelTreeView",
 					"group": "navigation"
 				},
 				{
-					"command": "novel-look.refreshStaticFile",
-					"when": "view == novelLookTreeView && config.novelLook.showRefreshStaticFile",
+					"command": "moyu-novel.refreshStaticFile",
+					"when": "view == moyuNovelTreeView && config.moyuNovel.showRefreshStaticFile",
 					"group": "navigation"
 				},
 				{
-					"command": "novel-look.openExplorer",
-					"when": "view == novelLookTreeView",
+					"command": "moyu-novel.openExplorer",
+					"when": "view == moyuNovelTreeView",
 					"group": "navigation"
 				},
 				{
-					"command": "novel-look.openWebViewDir",
-					"when": "view == novelLookTreeView",
+					"command": "moyu-novel.openWebViewDir",
+					"when": "view == moyuNovelTreeView",
 					"group": ""
 				},
 				{
 					"command": "moyu-novel.searchBook",
-					"when": "view == novelLookTreeView",
+					"when": "view == moyuNovelTreeView",
 					"group": "navigation"
 				},
 				{
-					"command": "novel-look.showReadChapter",
-					"when": "view == novelLookTreeView",
+					"command": "moyu-novel.showReadChapter",
+					"when": "view == moyuNovelTreeView",
 					"group": ""
 				},
 				{
-					"command": "novel-look.hideReadChapter",
-					"when": "view == novelLookTreeView",
+					"command": "moyu-novel.hideReadChapter",
+					"when": "view == moyuNovelTreeView",
 					"group": ""
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "novel-look.clearReadChapter",
-					"when": "view == novelLookTreeView"
+					"command": "moyu-novel.clearReadChapter",
+					"when": "view == moyuNovelTreeView"
 				},
 				{
-					"command": "novel-look.showChapter",
-					"when": "view == novelLookTreeView"
+					"command": "moyu-novel.showChapter",
+					"when": "view == moyuNovelTreeView"
 				}
 			]
 		},
 		"viewsContainers": {
 			"activitybar": [
 				{
-					"id": "novel-look",
+					"id": "moyu-novel",
 					"title": "看(mo)书(yu)",
 					"icon": "img/fish.png"
 				}
 			]
 		},
 		"views": {
-			"novel-look": [
+			"moyu-novel": [
 				{
-					"id": "novelLookTreeView",
+					"id": "moyuNovelTreeView",
 					"name": "书架",
 					"contextualTitle": "我的书架"
 				}
@@ -374,8 +580,8 @@
 		},
 		"viewsWelcome": [
 			{
-				"view": "novelLookTreeView",
-				"contents": "您还没有电子书,请把 TXT 小说放入书库目录\n[打开书库目录](command:novel-look.openExplorer)"
+				"view": "moyuNovelTreeView",
+				"contents": "您还没有电子书,请把 TXT 小说放入书库目录\n[打开书库目录](command:moyu-novel.openExplorer)"
 			}
 		]
 	},

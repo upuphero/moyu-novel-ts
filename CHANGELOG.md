@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Phase 9（内部 namespace 收口与发布准备，P4）
+
+- **命令收口（P9-01）**：全部命令迁移 `moyu-novel.*`（`Command` 常量）；keybinding（alt+s/alt+d）、菜单、activationEvents、when clause 同步新 ID；TreeView/容器迁移 `moyuNovelTreeView` / `moyu-novel`。
+- **旧命令 alias（P9-02）**：`novel-look.*` 注册到同一 handler（不进命令面板）；外部调用与旧 keybinding 兼容窗口内有效。
+- **设置/状态迁移（P9-03）**：配置读写 `moyuNovel.*`；旧 `novelLook.*` 只读 fallback（新 key → 旧 key → 默认）；`novelLook.*` 设置项标注"已迁移"；状态迁移沿用 P2-05（migration v1 幂等）。
+- **发布准备（P9-04/05）**：README/CHANGELOG/已知限制更新；发布 checklist 与兼容窗口文档（`docs/phase9/`）；ADR-003 关闭。
+- 单测 244 → 254；manifest/stateKeys/extension 测试重写为新 ID + legacy 锁定。
 ### Phase 8（Reader UI 与 WebView TypeScript，P4）
 
 - **WebView TS（P8-01/02）**：6 个 static/js 业务模块全部迁移为 `src/webview/*.ts`；esbuild 同时产出 Extension Host 与 WebView bundle（`static/js/webview.bundle.js`）；`static/js` 只保留构建产物。

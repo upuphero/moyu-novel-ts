@@ -3,7 +3,7 @@
 > 文档状态：执行基线  
 > 最后更新：2026-08-13  
 > 仓库基线：`main` / `b4ea173` / `package.json` 版本 `2.1.11`  
-> 当前进度：Phase 8 已完成（2026-08-13），Phase 9 尚未开始
+> 当前进度：全部 Phase 0-9 已完成（2026-08-13），进入发布准备
 
 本文档是 `moyu-novel-ts` 的长期开发基线。需求、优先级或技术决策发生变化时，应先更新本文档，再进入对应实现。
 
@@ -353,11 +353,11 @@ Phase gate：`static/js` 不再承载未类型检查的自有业务逻辑；生�
 
 | ID | 任务 | 主要交付物 | 验收 |
 | --- | --- | --- | --- |
-| P9-01 | 迁移并收口剩余 command/view/config ID | 除 Phase 5 已新增搜索命令外的 `moyu-novel.*`, `moyuNovel.*`, `moyuNovelTreeView` | package contributes、activation event、菜单、keybinding、when clause 和内部调用一致 |
-| P9-02 | 保留旧 command alias | 集中 legacy adapter 与 deprecation 文档 | 旧 Alt+S/Alt+D 和外部 command 调用仍有效 |
-| P9-03 | 完成设置/状态迁移 | migration version、scope-aware fallback、验证与日志 | 老用户的设置、已读、最近章节和进度尽量保留；迁移幂等 |
-| P9-04 | 发布文档与检查 | README、CHANGELOG、Credits、已知限制、发布 checklist | MIT 和 attribution 保留；仓库 URL 正确；没有冒用 publisher |
-| P9-05 | 定义兼容窗口 | alias/legacy key 的最短保留版本与删除条件 | 未达到窗口前不得移除 legacy 支持 |
+| P9-01 | 迁移并收口剩余 command/view/config ID | 除 Phase 5 已新增搜索命令外的 `moyu-novel.*`, `moyuNovel.*`, `moyuNovelTreeView` | package contributes、activation event、菜单、keybinding、when clause 和内部调用一致 | ✅
+| P9-02 | 保留旧 command alias | 集中 legacy adapter 与 deprecation 文档 | 旧 Alt+S/Alt+D 和外部 command 调用仍有效 | ✅
+| P9-03 | 完成设置/状态迁移 | migration version、scope-aware fallback、验证与日志 | 老用户的设置、已读、最近章节和进度尽量保留；迁移幂等 | ✅
+| P9-04 | 发布文档与检查 | README、CHANGELOG、Credits、已知限制、发布 checklist | MIT 和 attribution 保留；仓库 URL 正确；没有冒用 publisher | ✅
+| P9-05 | 定义兼容窗口 | alias/legacy key 的最短保留版本与删除条件 | 未达到窗口前不得移除 legacy 支持 | ✅
 
 Phase gate：active metadata/homepage/issues 不再指向上游；旧身份只存在于 Credits、License、历史 CHANGELOG、迁移代码、legacy 测试和兼容文档；新安装与 Phase 0 选定的旧版本迁移路径都通过验收。
 
@@ -397,7 +397,7 @@ Phase gate：active metadata/homepage/issues 不再指向上游；旧身份只�
 | --- | --- | --- |
 | ADR-001 | Phase 0 | Marketplace Publisher ID、版本与发布策略 |
 | ADR-002 | Phase 0 | 外部扩展 ID 改名后旧 `globalState`/`globalStorageUri` 的可达性与书库迁移路径 |
-| ADR-003 | Phase 0 | command/config/view 的迁移顺序、alias 保留窗口 |
+| ADR-003 | Phase 0 | command/config/view 的迁移顺序、alias 保留窗口 | Phase 9 关闭 |
 | ADR-004 | Phase 0 | Windows/macOS/Linux 与 virtual workspace 的支持边界 |
 | ADR-005 | Phase 1 | `BookParser.load()` 生命周期、错误和资源释放语义 |
 | ADR-006 | Phase 1 | `头部`/preface 的 chapterId、显示与计数语义；无章节/空书行为 |

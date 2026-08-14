@@ -34,3 +34,8 @@ Activity 容器 `novel-look`。长期目标：`moyu-novel.*` / `moyuNovel.*` / `
 
 - [x] `src/legacy/ids.ts` 集中所有旧 ID 常量；单测锁定形状（P0-07）。
 - [x] Phase 0 未改动任何命令/配置/view ID（manifest 单测覆盖）。
+- [x] **Phase 9 完成（2026-08-13）**：命令全部迁移 `moyu-novel.*`（旧 ID alias 注册同一 handler，
+      兼容窗口内有效）；配置读写 `moyuNovel.*` + 旧 key 只读 fallback（`configCore.resolveConfigValue`）；
+      TreeView/容器迁移 `moyuNovelTreeView` / `moyu-novel`；`novelLook.*` 配置项保留并标注 deprecated。
+- [x] 兼容窗口与删除条件文档化（`docs/phase9/P9-compat-window.md`，P9-05）。
+- [x] 发布 checklist 就绪（`docs/phase9/P9-release-checklist.md`，P9-04）。

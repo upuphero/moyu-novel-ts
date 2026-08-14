@@ -30,8 +30,21 @@ suite("Extension Test Suite", () => {
 		}
 	});
 
-	test("激活后核心命令已注册（P0-03-1 async activate）", async () => {
+	test("激活后核心命令已注册（P0-03-1 async activate + P9-01/02）", async () => {
 		const commands = await vscode.commands.getCommands(true);
+		// 新 namespace 命令
+		for (const cmd of [
+			"moyu-novel.openWebView",
+			"moyu-novel.closeWebView",
+			"moyu-novel.showChapter",
+			"moyu-novel.refreshFile",
+			"moyu-novel.nextChapter",
+			"moyu-novel.prevChapter",
+			"moyu-novel.searchBook",
+		]) {
+			assert.ok(commands.includes(cmd), `新命令未注册: ${cmd}`);
+		}
+		// 旧 namespace alias（P9-02：兼容窗口内共存，外部调用仍有效）
 		for (const cmd of [
 			"novel-look.openWebView",
 			"novel-look.closeWebView",
@@ -40,7 +53,7 @@ suite("Extension Test Suite", () => {
 			"novel-look.nextChapter",
 			"novel-look.prevChapter",
 		]) {
-			assert.ok(commands.includes(cmd), `命令未注册: ${cmd}`);
+			assert.ok(commands.includes(cmd), `旧 alias 未注册: ${cmd}`);
 		}
 	});
 
@@ -163,7 +176,8 @@ test("内置章节 matcher：正例识别、正文反例不识别（P7-02）", a
 	});
 
 	test("无效用户 regex 安全回退内置 matcher（P7-03）", async () => {
-		const config = vscode.workspace.getConfiguration("novelLook");
+		// P9-03：读写均用新 namespace moyuNovel.*
+		const config = vscode.workspace.getConfiguration("moyuNovel");
 		const before = config.get("match.chapterName");
 		try {
 			await config.update("match.chapterName", "([非法", true);
@@ -174,6 +188,14 @@ test("内置章节 matcher：正例识别、正文反例不识别（P7-02）", a
 		} finally {
 			await config.update("match.chapterName", before, true);
 		}
+	});
+
+	test("旧配置 key 只读 fallback 生效（P9-03：novelLook.* → moyuNovel.*）", async () => {
+		const { resolveConfigValue } = await import("../../configCore");
+		// 纯函数语义：新 key 显式值 → 旧 key 显式值 → 默认
+		assert.strictEqual(resolveConfigValue(undefined, 5, 1), 5, "旧 key fallback");
+		assert.strictEqual(resolveConfigValue(2, 5, 1), 2, "新 key 优先");
+		assert.strictEqual(resolveConfigValue(undefined, undefined, 1), 1, "默认值");
 	});
 
 	test("进度计算纯函数冒烟（P6-01）", async () => {

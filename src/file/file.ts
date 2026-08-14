@@ -8,6 +8,7 @@ import * as config from "../config";
 import { FileTreeItem } from "./fileUtil";
 
 import { closeWebView, showChapter } from "../webView";
+import { Command } from "../legacy/ids";
 
 const staticDir = "/static/";
 export const getTargetStaticDir = () => {
@@ -65,7 +66,7 @@ async function refreshStaticFile() {
 
 	// 重启视图
 	closeWebView();
-	vscode.commands.executeCommand("novel-look.openWebView");
+	vscode.commands.executeCommand(Command.OpenWebView);
 }
 
 /**

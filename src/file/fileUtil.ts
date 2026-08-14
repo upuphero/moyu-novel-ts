@@ -46,7 +46,7 @@ function getNovelNameRegex(): RegExp {
 		}
 		return reg;
 	} catch (error) {
-		console.error("novelLook.match.novelName 非法,已回退默认规则", error);
+		console.error("moyuNovel.match.novelName 非法,已回退默认规则", error);
 		try {
 			vscode.window.showErrorMessage("小说文件匹配正则非法,已回退默认规则");
 		} catch {

@@ -46,6 +46,18 @@
 /^(?:[ \t\r\f\v]*)(第[一二两三四五六七八九十百千万零〇\d]*[篇节部卷][ \t\r\f\v]*.*[ \t\r\f\v]*)?第[一二两三四五六七八九十百千万零〇\d]*章[^\n\r]*$/;
 ```
 
+## 配置与命令命名空间（Phase 9 迁移说明）
+
+- **配置项**：全部使用 `moyuNovel.*` 前缀（如 `moyuNovel.match.chapterName`、`moyuNovel.readSetting.zoom`）。
+  旧前缀 `novelLook.*` 仍在**兼容窗口**内被只读回退读取（新 key 显式值 → 旧 key 显式值 → 默认值）；
+  在设置中旧项标有"已迁移"提示，新设置请写入 `moyuNovel.*`。
+- **命令 ID**：全部使用 `moyu-novel.*` 前缀（如 `Moyu Novel: 打开窗口` = `moyu-novel.openWebView`）。
+  旧命令 `novel-look.*` 注册为 alias（同一实现），兼容窗口内外部调用与旧 keybinding 仍有效；
+  但旧命令不再出现在命令面板（避免重复项）。
+- **书架视图**：TreeView ID 迁移为 `moyuNovelTreeView`（Activity 容器 `moyu-novel`）。
+- **兼容窗口**：alias 至少共存 2 个 minor 版本，删除条件见
+  [P9-compat-window](./docs/phase9/P9-compat-window.md) 与 ADR-003。
+
 ## 平台支持
 
 | 平台 | 支持 |
@@ -90,3 +102,10 @@ CI：`.github/workflows/ci.yml`（lint / typecheck / unit / production bundle / 
 - 文件移动/重命名后阅读进度不自动关联（bookId 基于路径哈希，见 ADR-007）；重新打开章节即可重建。
 - 扩展 ID 相关迁移说明见 [ADR-002](./docs/adr/ADR-002-extension-id-migration.md)。
 - 阅读统计、完整主题编辑器、字体推荐等在 backlog（见开发计划 §12）。
+
+## 已知限制
+
+- **文件移动后进度不关联**（P2，ADR-007）：bookId 基于路径哈希，移动/重命名书文件后旧进度不再自动关联，重新打开章节即可重建。
+- **旧命令/配置兼容窗口**（P9，ADR-003）：`novel-look.*` 命令 alias 与 `novelLook.*` 配置读取支持将在窗口到期后移除；当前版本继续保留。
+- **扩展 ID 迁移**（P2，ADR-002）：新扩展身份 `moyu-novel.moyu-novel-ts` 无法自动读取旧 `ytx222.novel-look-ts` 的书库与状态，迁移方案见 [ADR-002](./docs/adr/ADR-002-extension-id-migration.md) 与 [P0-04 spike 报告](./docs/phase0/P0-04-extension-id-spike.md)。
+- **EPUB 子集**（P4，ADR-010）：不支持 ZIP64、完整 XML 特性、图片渲染与出版社 CSS；损坏章节跳过不影响其他章节。
